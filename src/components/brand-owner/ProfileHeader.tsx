@@ -1,4 +1,24 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { getMyProfile } from "@/lib/api/profile";
+
 export default function ProfileHeader() {
+  const [name, setName] = useState("Profile");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getMyProfile();
+        setName(data.name || "Profile");
+      } catch {
+        // Keep the default heading if the request fails.
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   return (
     <section className="border-b border-black/10 bg-white px-6 py-8 lg:px-10">
       <p className="text-sm font-medium text-[#31515A]">
@@ -6,7 +26,7 @@ export default function ProfileHeader() {
       </p>
 
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#102f3a]">
-        Profile
+        {name}
       </h1>
 
       <p className="mt-3 max-w-2xl text-sm leading-6 text-[#102f3a]/60">

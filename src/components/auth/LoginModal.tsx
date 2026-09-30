@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { loginUser } from "@/lib/api/auth";
+import { useAuth } from "@/context/AuthContext";
+import { getRegistrationPaymentStatus } from "@/lib/api/registrationPayment";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -13,18 +16,58 @@ export default function LoginModal({
   onClose,
   onRegister,
 }: LoginModalProps) {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Backend authentication will be connected later.
-    console.log("Login submitted", { email, password });
-  };
+    setError("");
+    setIsSubmitting(true);
 
+    try {
+      const response = await loginUser({
+        email,
+        password,
+      });
+
+      login({
+        userId: response.userId,
+        name: response.name,
+        email: response.email,
+        role: response.role,
+        token: response.token,
+      });
+
+      onClose();
+
+      if (response.role === "ADMIN") {
+        window.location.href = "/admin";
+        return;
+      }
+
+      const paymentStatus = await getRegistrationPaymentStatus(response.token);
+
+      if (paymentStatus.status === "PAID") {
+        window.location.href = "/dashboard";
+      } else {
+        window.location.href = "/complete-registration";
+      }
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Login failed. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
       <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
@@ -40,9 +83,7 @@ export default function LoginModal({
 
         {/* Heading */}
         <div className="pr-8">
-          <h2 className="text-2xl font-bold text-[#102f3a]">
-            Welcome Back
-          </h2>
+          <h2 className="text-2xl font-bold text-[#102f3a]">Welcome Back</h2>
 
           <p className="mt-2 text-sm leading-6 text-[#102f3a]/60">
             Login to your T-Adda Brand Owner account
@@ -83,12 +124,15 @@ export default function LoginModal({
             />
           </div>
 
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
           {/* Login Button */}
           <button
             type="submit"
-            className="w-full rounded-lg bg-[#102f3a] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#31515A]"
+            disabled={isSubmitting}
+            className="w-full rounded-lg bg-[#102f3a] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#31515A] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Login
+            {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
 

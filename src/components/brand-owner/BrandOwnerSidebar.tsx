@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const menuItems = [
   {
@@ -27,6 +28,7 @@ const menuItems = [
 ];
 
 export default function BrandOwnerSidebar() {
+  const { logout } = useAuth();
   const pathname = usePathname();
 
   return (
@@ -69,6 +71,7 @@ export default function BrandOwnerSidebar() {
         <button
           type="button"
           className="w-full rounded-lg px-4 py-3 text-left text-sm font-medium text-[#31515A] transition-colors hover:bg-[#fff4f5] hover:text-black"
+          onClick={logout}
         >
           Logout
         </button>

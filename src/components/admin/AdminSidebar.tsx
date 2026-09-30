@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const menuItems = [
   {
@@ -36,6 +37,7 @@ const menuItems = [
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-black/10 bg-white">
@@ -79,6 +81,7 @@ export default function AdminSidebar() {
       <div className="border-t border-black/10 p-4">
         <button
           type="button"
+          onClick={logout}
           className="w-full rounded-lg px-4 py-3 text-left text-sm font-medium text-[#31515A] transition-colors hover:bg-[#fff4f5] hover:text-black"
         >
           Logout

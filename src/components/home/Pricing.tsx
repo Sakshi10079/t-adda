@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import RegistrationModal from "@/components/auth/RegistrationModal";
+
 const dtfPrinting = [
   {
     size: "Pocket Size",
@@ -106,6 +111,7 @@ const samples = [
 ];
 
 export default function Pricing() {
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   return (
     <section className="bg-white px-6 py-20 lg:px-56 lg:py-12" id="pricing">
       <div className="mx-auto max-w-[1200px]">
@@ -243,13 +249,14 @@ export default function Pricing() {
               ))}
             </div>
 
-            <a
-              href=""
+            <button
+              type="button"
+              onClick={() => setIsRegistrationOpen(true)}
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#071a21] transition hover:bg-[#E0F2FE]"
             >
               Register Now
               <span>→</span>
-            </a>
+            </button>
           </div>
         </div>
 
@@ -348,6 +355,9 @@ export default function Pricing() {
           </p>
         </div>
       </div>
+      {isRegistrationOpen && (
+        <RegistrationModal onClose={() => setIsRegistrationOpen(false)} />
+      )}
     </section>
   );
 }

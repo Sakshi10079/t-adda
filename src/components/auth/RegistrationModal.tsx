@@ -1,38 +1,50 @@
 "use client";
 
 import { useState } from "react";
+import { registerUser } from "@/lib/api/auth";
+import { useAuth } from "@/context/AuthContext";
+import { createRegistrationPaymentOrder } from "@/lib/api/registrationPayment";
+import { openRazorpayCheckout } from "@/lib/razorpay";
 
 type RegistrationModalProps = {
   onClose: () => void;
 };
 
-export default function RegistrationModal({
-  onClose,
-}: RegistrationModalProps) {
+export default function RegistrationModal({ onClose }: RegistrationModalProps) {
+  const { login } = useAuth();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [brandName, setBrandName] = useState("");
+  const [socialMediaHandles, setSocialMediaHandles] = useState("");
+
   const [businessStage, setBusinessStage] = useState("");
   const [products, setProducts] = useState<string[]>([]);
   const [sellingPlatforms, setSellingPlatforms] = useState<string[]>([]);
   const [mockupExperience, setMockupExperience] = useState("");
   const [mockupStyle, setMockupStyle] = useState<string[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState("");
+  // const [paymentMethod, setPaymentMethod] = useState("");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
   const toggleSelection = (
     value: string,
-    current: string[],
-    setCurrent: React.Dispatch<React.SetStateAction<string[]>>
+    setCurrent: React.Dispatch<React.SetStateAction<string[]>>,
   ) => {
     setCurrent((prev) =>
       prev.includes(value)
         ? prev.filter((item) => item !== value)
-        : [...prev, value]
+        : [...prev, value],
     );
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -41,9 +53,60 @@ export default function RegistrationModal({
     }
 
     setPasswordError("");
+    setServerError("");
+    setSuccessMessage("");
+    setIsSubmitting(true);
 
-    // Backend and payment functionality will be connected later.
-    console.log("Registration form submitted");
+    try {
+      const response = await registerUser({
+        name,
+        email,
+        phone,
+        password,
+        brandName,
+        businessStage,
+        productCategories: products.join(", "),
+        sellingPlatforms: sellingPlatforms.join(", "),
+        socialMediaHandles,
+        mockupExperience,
+        mockupStyle: mockupStyle.join(", "),
+      });
+
+      login({
+        userId: response.userId,
+        name: response.name,
+        email: response.email,
+        role: response.role,
+        token: response.token,
+      });
+
+      const order = await createRegistrationPaymentOrder(response.token);
+
+      openRazorpayCheckout({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        orderId: order.orderId,
+        name: "T-Adda",
+        description: "Brand Owner Registration",
+        onSuccess: () => {
+          window.location.href = "/dashboard";
+        },
+        // onDismiss: () => {
+        //   setSuccessMessage(
+        //     "Your registration is saved. Please complete the ₹1,799 payment to access your dashboard.",
+        //   );
+        // },
+      });
+    } catch (error) {
+      setServerError(
+        error instanceof Error
+          ? error.message
+          : "Registration failed. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -114,6 +177,8 @@ export default function RegistrationModal({
                 <input
                   type="text"
                   required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your full name"
                   className="w-full rounded-lg border border-[#102f3a]/10 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#102f3a]/35 focus:border-[#31515A]"
                 />
@@ -127,6 +192,8 @@ export default function RegistrationModal({
                 <input
                   type="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
                   className="w-full rounded-lg border border-[#102f3a]/10 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#102f3a]/35 focus:border-[#31515A]"
                 />
@@ -140,6 +207,8 @@ export default function RegistrationModal({
                 <input
                   type="tel"
                   required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   placeholder="Enter your phone number"
                   className="w-full rounded-lg border border-[#102f3a]/10 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#102f3a]/35 focus:border-[#31515A]"
                 />
@@ -152,6 +221,8 @@ export default function RegistrationModal({
 
                 <input
                   type="text"
+                  value={brandName}
+                  onChange={(e) => setBrandName(e.target.value)}
                   placeholder="Enter your brand name"
                   className="w-full rounded-lg border border-[#102f3a]/10 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#102f3a]/35 focus:border-[#31515A]"
                 />
@@ -164,6 +235,8 @@ export default function RegistrationModal({
 
                 <input
                   type="text"
+                  value={socialMediaHandles}
+                  onChange={(e) => setSocialMediaHandles(e.target.value)}
                   placeholder="Instagram / Facebook / other links"
                   className="w-full rounded-lg border border-[#102f3a]/10 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#102f3a]/35 focus:border-[#31515A]"
                 />
@@ -177,8 +250,8 @@ export default function RegistrationModal({
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-[#102f3a]/60">
-                Create a password to access your T-Adda Brand Owner dashboard
-                in the future.
+                Create a password to access your T-Adda Brand Owner dashboard in
+                the future.
               </p>
 
               <div className="mt-5 space-y-5">
@@ -221,16 +294,12 @@ export default function RegistrationModal({
                     }}
                     placeholder="Re-enter your password"
                     className={`w-full rounded-lg border ${
-                      passwordError
-                        ? "border-red-400"
-                        : "border-[#102f3a]/10"
+                      passwordError ? "border-red-400" : "border-[#102f3a]/10"
                     } bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#102f3a]/35 focus:border-[#31515A]`}
                   />
 
                   {passwordError && (
-                    <p className="mt-2 text-xs text-red-500">
-                      {passwordError}
-                    </p>
+                    <p className="mt-2 text-xs text-red-500">{passwordError}</p>
                   )}
                 </div>
               </div>
@@ -268,33 +337,25 @@ export default function RegistrationModal({
               <CheckboxOption
                 label="Tshirts"
                 checked={products.includes("Tshirts")}
-                onChange={() =>
-                  toggleSelection("Tshirts", products, setProducts)
-                }
+                onChange={() => toggleSelection("Tshirts", setProducts)}
               />
 
               <CheckboxOption
                 label="Hoodies"
                 checked={products.includes("Hoodies")}
-                onChange={() =>
-                  toggleSelection("Hoodies", products, setProducts)
-                }
+                onChange={() => toggleSelection("Hoodies", setProducts)}
               />
 
               <CheckboxOption
                 label="Sweatshirts"
                 checked={products.includes("Sweatshirts")}
-                onChange={() =>
-                  toggleSelection("Sweatshirts", products, setProducts)
-                }
+                onChange={() => toggleSelection("Sweatshirts", setProducts)}
               />
 
               <CheckboxOption
                 label="Polos"
                 checked={products.includes("Polos")}
-                onChange={() =>
-                  toggleSelection("Polos", products, setProducts)
-                }
+                onChange={() => toggleSelection("Polos", setProducts)}
               />
             </FormSection>
 
@@ -304,11 +365,7 @@ export default function RegistrationModal({
                 label="Instagram"
                 checked={sellingPlatforms.includes("Instagram")}
                 onChange={() =>
-                  toggleSelection(
-                    "Instagram",
-                    sellingPlatforms,
-                    setSellingPlatforms
-                  )
+                  toggleSelection("Instagram", setSellingPlatforms)
                 }
               />
 
@@ -316,24 +373,14 @@ export default function RegistrationModal({
                 label="Facebook"
                 checked={sellingPlatforms.includes("Facebook")}
                 onChange={() =>
-                  toggleSelection(
-                    "Facebook",
-                    sellingPlatforms,
-                    setSellingPlatforms
-                  )
+                  toggleSelection("Facebook", setSellingPlatforms)
                 }
               />
 
               <CheckboxOption
                 label="Website"
                 checked={sellingPlatforms.includes("Website")}
-                onChange={() =>
-                  toggleSelection(
-                    "Website",
-                    sellingPlatforms,
-                    setSellingPlatforms
-                  )
-                }
+                onChange={() => toggleSelection("Website", setSellingPlatforms)}
               />
             </FormSection>
 
@@ -379,11 +426,7 @@ export default function RegistrationModal({
                 label="Realistic photos"
                 checked={mockupStyle.includes("Realistic photos")}
                 onChange={() =>
-                  toggleSelection(
-                    "Realistic photos",
-                    mockupStyle,
-                    setMockupStyle
-                  )
+                  toggleSelection("Realistic photos", setMockupStyle)
                 }
               />
 
@@ -391,24 +434,19 @@ export default function RegistrationModal({
                 label="Simple, clean designs"
                 checked={mockupStyle.includes("Simple, clean designs")}
                 onChange={() =>
-                  toggleSelection(
-                    "Simple, clean designs",
-                    mockupStyle,
-                    setMockupStyle
-                  )
+                  toggleSelection("Simple, clean designs", setMockupStyle)
                 }
               />
 
               <CheckboxOption
                 label="Lifestyle settings (e.g., people wearing the product)"
                 checked={mockupStyle.includes(
-                  "Lifestyle settings (e.g., people wearing the product)"
+                  "Lifestyle settings (e.g., people wearing the product)",
                 )}
                 onChange={() =>
                   toggleSelection(
                     "Lifestyle settings (e.g., people wearing the product)",
-                    mockupStyle,
-                    setMockupStyle
+                    setMockupStyle,
                   )
                 }
               />
@@ -417,20 +455,14 @@ export default function RegistrationModal({
                 label="Flat lay style"
                 checked={mockupStyle.includes("Flat lay style")}
                 onChange={() =>
-                  toggleSelection(
-                    "Flat lay style",
-                    mockupStyle,
-                    setMockupStyle
-                  )
+                  toggleSelection("Flat lay style", setMockupStyle)
                 }
               />
 
               <CheckboxOption
                 label="Other"
                 checked={mockupStyle.includes("Other")}
-                onChange={() =>
-                  toggleSelection("Other", mockupStyle, setMockupStyle)
-                }
+                onChange={() => toggleSelection("Other", setMockupStyle)}
               />
             </FormSection>
 
@@ -444,15 +476,16 @@ export default function RegistrationModal({
                 />
 
                 <span className="text-sm leading-6 text-[#102f3a]/70">
-                  I confirm that the details provided by me are accurate and
-                  by registering, I understand that the fee is{" "}
-                  <strong className="text-[#102f3a]">non refundable</strong>.<span className="text-red-500">*</span>
+                  I confirm that the details provided by me are accurate and by
+                  registering, I understand that the fee is{" "}
+                  <strong className="text-[#102f3a]">non refundable</strong>.
+                  <span className="text-red-500">*</span>
                 </span>
               </label>
             </div>
 
             {/* Payment */}
-            <FormSection title="How would you like to complete the payment of Rs.1799/- for registration?">
+            {/* <FormSection title="How would you like to complete the payment of Rs.1799/- for registration?">
               <RadioOption
                 label="UPI"
                 name="paymentMethod"
@@ -468,14 +501,28 @@ export default function RegistrationModal({
                 checked={paymentMethod === "Bank Transfer"}
                 onChange={setPaymentMethod}
               />
-            </FormSection>
+            </FormSection> */}
+
+            {/* API Messages */}
+            {serverError && (
+              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                {serverError}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+                {successMessage}
+              </div>
+            )}
 
             {/* Submit */}
             <button
               type="submit"
-              className="w-full rounded-lg bg-[#102f3a] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#31515A]"
+              disabled={isSubmitting}
+              className="w-full rounded-lg bg-[#102f3a] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#31515A] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Submit to finish
+              {isSubmitting ? "Opening Payment..." : "Proceed to Payment"}
             </button>
           </form>
         </div>
