@@ -14,10 +14,6 @@ const menuItems = [
     href: "/dashboard/resources",
   },
   {
-    name: "Training",
-    href: "/dashboard/training",
-  },
-  {
     name: "My Brand",
     href: "/dashboard/my-brand",
   },

@@ -1,11 +1,11 @@
 import ResourcesHeader from "@/components/brand-owner/ResourcesHeader";
-import ResourcesList from "@/components/brand-owner/ResourcesList";
+import ResourcesDetails from "@/components/brand-owner/ResourcesDetails";
 
 export default function ResourcesPage() {
   return (
     <>
       <ResourcesHeader />
-      <ResourcesList />
+      <ResourcesDetails />
     </>
   );
 }

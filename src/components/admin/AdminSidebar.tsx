@@ -28,11 +28,7 @@ const menuItems = [
   {
     name: "Resources",
     href: "/admin/resources",
-  },
-  {
-    name: "Training",
-    href: "/admin/training",
-  },
+  }
 ];
 
 export default function AdminSidebar() {

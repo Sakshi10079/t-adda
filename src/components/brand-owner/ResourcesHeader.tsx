@@ -10,8 +10,8 @@ export default function ResourcesHeader() {
       </h1>
 
       <p className="mt-3 max-w-2xl text-sm leading-6 text-[#102f3a]/60">
-        Access useful guides, mockups, design resources, and other materials
-        to help you build and grow your brand.
+        Access free designs, product catalogs, mockups, marketing resources,
+        and other useful resources provided by T-Adda.
       </p>
     </section>
   );
